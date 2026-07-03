@@ -1,0 +1,32 @@
+
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+
+    environment:
+      xcode: latest
+      flutter: 3.44.2
+
+    scripts:
+      - name: Install CocoaPods
+        script: |
+          sudo gem install cocoapods --no-document
+          pod repo update 
+
+      - name: Install Flutter dependencies
+        script: flutter pub get
+
+      - name: Build iOS
+        script: |
+          flutter build ios --no-codesign
+
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/Runner.app
+
+          zip -r ../../../app.ipa Payload
+
+    artifacts:
+      - app.ipa
