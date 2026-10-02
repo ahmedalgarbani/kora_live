@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import '../../core/config/app_config.dart';
 import '../models/settings_model.dart';
 
 abstract class SettingsLocalDataSource {
@@ -17,13 +18,20 @@ class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
     final value = _box.get(_settingsKey);
     if (value is Map) {
       try {
-        return SettingsModel.fromMap(value);
+        return SettingsModel.fromMap(
+          value,
+          defaultServerUrl: AppConfig.defaultServerUrl,
+        );
       } catch (_) {
-        // Return default settings if parsing fails
+        // Fall through to defaults if parsing fails
       }
     }
-    // Default: Adblock and Popup Block are enabled by default for a clean user experience!
-    return const SettingsModel(adBlockEnabled: true, popupBlockEnabled: true);
+    // Default: Adblock and Popup Block are enabled for a clean experience.
+    return const SettingsModel(
+      adBlockEnabled: true,
+      popupBlockEnabled: true,
+      serverUrl: AppConfig.defaultServerUrl,
+    );
   }
 
   @override

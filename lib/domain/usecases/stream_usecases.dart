@@ -1,4 +1,5 @@
 import '../entities/stream_link.dart';
+import '../entities/sync_result.dart';
 import '../repositories/stream_repository.dart';
 
 class GetStreamLinks {
@@ -16,6 +17,15 @@ class AddStreamLink {
 
   Future<void> call(StreamLink stream) async {
     return repository.addStream(stream);
+  }
+}
+
+class UpdateStreamLink {
+  final StreamRepository repository;
+  const UpdateStreamLink(this.repository);
+
+  Future<void> call(StreamLink stream) async {
+    return repository.updateStream(stream);
   }
 }
 
@@ -48,5 +58,23 @@ class IncrementPlayCount {
       lastViewedAt: DateTime.now(),
     );
     return repository.updateStream(updated);
+  }
+}
+
+class SyncRemoteStreams {
+  final StreamRepository repository;
+  const SyncRemoteStreams(this.repository);
+
+  Future<SyncResult> call(String serverUrl) async {
+    return repository.syncFromServer(serverUrl);
+  }
+}
+
+class GetLastSync {
+  final StreamRepository repository;
+  const GetLastSync(this.repository);
+
+  Future<SyncResult?> call() async {
+    return repository.getLastSync();
   }
 }

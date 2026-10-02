@@ -1,16 +1,80 @@
-# kora_live
+# Kora Live
 
-A new Flutter project.
+تطبيق Flutter لمشاهدة المباريات والقنوات الرياضية من روابطك الخاصة أو من سيرفر خارجي، مع حاجب إعلانات ومانع للنوافذ المنبثقة داخل المشغّل.
 
-## Getting Started
+## المميزات
 
-This project is a starting point for a Flutter application.
+- **جلب الروابط من السيرفر**: اربط التطبيق برابط ملف JSON ليتم جلب المباريات والقنوات تلقائياً عند فتح التطبيق أو بالسحب للتحديث، مع الاحتفاظ بنسخة محلية للعمل بدون إنترنت.
+- **روابط احتياطية (سيرفرات متعددة)** لكل مباراة/قناة مع التبديل بينها من داخل المشغّل.
+- إضافة / تعديل / حذف الروابط يدوياً (مع إمكانية التراجع عن الحذف) ولصق الرابط من الحافظة.
+- المفضلة، "تابع المشاهدة"، البحث الشامل، الفلترة والترتيب.
+- شارة "مباشر" حقيقية حسب وقت انطلاق المباراة القادم من السيرفر.
+- مشغّل بملء شاشة حقيقي (أفقي + إخفاء أشرطة النظام)، إبقاء الشاشة مضاءة، نسخ الرابط.
+- حاجب إعلانات ومانع نوافذ منبثقة وروابط `intent://` / `market://`.
+- واجهة عربية كاملة من اليمين لليسار بتصميم موحّد (ألوان ومسافات ونصوص من مصدر واحد).
 
-A few resources to get you started if this is your first Flutter project:
+## ربط السيرفر
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+من تبويب **الإعدادات ← سيرفر الروابط** أدخل رابط ملف JSON ثم اضغط **حفظ ومزامنة الآن**.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+يمكن أيضاً تحديد سيرفر افتراضي عند البناء:
+
+```bash
+flutter build apk --dart-define=KORA_SERVER_URL=https://example.com/streams.json
+```
+
+### صيغة الملف
+
+مثال كامل في [`server/streams.example.json`](server/streams.example.json):
+
+```json
+{
+  "message": "نص إعلان اختياري يظهر أعلى الصفحة الرئيسية",
+  "streams": [
+    {
+      "id": "hilal-nassr",
+      "title": "الهلال vs النصر",
+      "type": "match",
+      "league": "دوري روشن",
+      "startTime": "2026-10-02T18:00:00Z",
+      "logo": "https://.../logo.png",
+      "url": "https://example.com/live/1",
+      "mirrors": [{ "name": "HD", "url": "https://example.com/live/1-hd" }]
+    }
+  ]
+}
+```
+
+| الحقل | إلزامي | الوصف |
+|---|---|---|
+| `title` (أو `name`) | نعم | العنوان. للمباريات استخدم `vs` أو `ضد` أو `x` بين الفريقين لعرض الشعارين |
+| `url` (أو `link`) | نعم | رابط البث `http/https` |
+| `id` | يُفضّل | معرّف ثابت؛ يحافظ على المفضلة وسجل المشاهدة بين التحديثات (إن لم يوجد يُستخدم الرابط) |
+| `type` | لا | `match` (افتراضي) أو `channel` |
+| `league` | لا | اسم البطولة |
+| `startTime` | لا | وقت البداية بصيغة ISO-8601 أو Unix timestamp — يُستخدم لشارة "مباشر" والترتيب |
+| `logo` | لا | رابط شعار |
+| `mirrors` (أو `servers`) | لا | روابط احتياطية: كائنات `{name, url}` أو نصوص |
+
+يُقبل أيضاً مصفوفة JSON مباشرة، أو مصفوفتان منفصلتان `matches` و `channels`.
+
+عند كل مزامنة: تُضاف الروابط الجديدة، وتُحدّث الموجودة (مع الحفاظ على المفضلة والسجل)، وتُحذف الروابط التي أزيلت من السيرفر. الروابط التي أضافها المستخدم يدوياً لا تتأثر أبداً.
+
+## التطوير
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```
+
+البنية: Clean Architecture (`domain` / `data` / `presentation`) مع `flutter_bloc` و `get_it` و `hive`.
+
+```
+lib/
+  core/        الإعدادات، الثيم (colors.dart, app_theme.dart)، أدوات مساعدة، DI
+  domain/      الكيانات، واجهات المستودعات، حالات الاستخدام
+  data/        النماذج، مصادر البيانات (محلي Hive + سيرفر HTTP)، المستودعات
+  presentation/ Cubits، الشاشات، الويدجتات المشتركة
+```
