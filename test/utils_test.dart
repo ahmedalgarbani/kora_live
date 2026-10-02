@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kora_live/core/utils/formatters.dart';
 import 'package:kora_live/core/utils/match_utils.dart';
 import 'package:kora_live/presentation/widgets/adblock_rules.dart';
+import 'package:kora_live/presentation/widgets/common_widgets.dart';
 
 void main() {
   group('parseTeams', () {
@@ -35,6 +36,14 @@ void main() {
     expect(teamLogoFor('AC Milan'), contains('AC_Milan'));
     expect(teamLogoFor('Unknown FC'), isNull);
     expect(channelLogoFor('beIN Sports 1'), contains('BeIN'));
+  });
+
+  test('initials skip the Arabic article', () {
+    expect(initialOf('الهلال'), 'ه');
+    expect(initialOf('النصر'), 'ن');
+    expect(initialOf('real madrid'), 'R');
+    expect(initialOf('  '), '?');
+    expect(initialOf('ال'), 'ا');
   });
 
   group('adblock helpers', () {

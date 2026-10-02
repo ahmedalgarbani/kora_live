@@ -80,10 +80,7 @@ class _Fallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trimmed = name.trim();
-    final letter = trimmed.isNotEmpty
-        ? String.fromCharCode(trimmed.runes.first).toUpperCase()
-        : '?';
+    final letter = initialOf(name);
     return Container(
       width: size,
       height: size,
@@ -105,6 +102,17 @@ class _Fallback extends StatelessWidget {
             ),
     );
   }
+}
+
+/// First meaningful letter of a name, skipping the Arabic article "ال"
+/// so "الهلال" gives "ه" instead of "ا" for every club.
+String initialOf(String name) {
+  var trimmed = name.trim();
+  if (trimmed.isEmpty) return '?';
+  if (trimmed.startsWith('ال') && trimmed.length > 2) {
+    trimmed = trimmed.substring(2);
+  }
+  return String.fromCharCode(trimmed.runes.first).toUpperCase();
 }
 
 class SectionHeader extends StatelessWidget {

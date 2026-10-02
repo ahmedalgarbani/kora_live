@@ -75,6 +75,9 @@ class AppTheme {
         fillColor: AppColors.cardFill,
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         hintStyle: const TextStyle(color: AppColors.textMuted),
+        helperStyle: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+        helperMaxLines: 2,
+        errorMaxLines: 2,
         prefixIconColor: AppColors.textSecondary,
         suffixIconColor: AppColors.textSecondary,
         contentPadding: const EdgeInsets.symmetric(

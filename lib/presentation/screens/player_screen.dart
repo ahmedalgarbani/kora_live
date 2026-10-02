@@ -49,7 +49,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     WakelockPlus.disable().catchError((_) {});
-    _restoreSystemUi();
+    if (_isFullscreen) _restoreSystemUi();
     super.dispose();
   }
 
