@@ -1,0 +1,39 @@
+{
+  "message": "مرحباً بكم في Kora Live — تم تحديث روابط مباريات اليوم",
+  "streams": [
+    {
+      "id": "hilal-nassr-2026-10-02",
+      "title": "الهلال vs النصر",
+      "type": "match",
+      "league": "دوري روشن السعودي",
+      "startTime": "2026-10-02T18:00:00Z",
+      "url": "https://example.com/live/hilal-nassr",
+      "mirrors": [
+        { "name": "HD", "url": "https://example.com/live/hilal-nassr-hd" },
+        { "name": "سيرفر 3", "url": "https://mirror.example.net/hilal-nassr" }
+      ]
+    },
+    {
+      "id": "real-barca-2026-10-02",
+      "title": "Real Madrid vs Barcelona",
+      "type": "match",
+      "league": "الدوري الإسباني",
+      "startTime": "2026-10-02T20:00:00Z",
+      "url": "https://example.com/live/clasico"
+    },
+    {
+      "id": "bein-1",
+      "title": "beIN Sports 1",
+      "type": "channel",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/BeIN_Sports_logo.svg/200px-BeIN_Sports_logo.svg.png",
+      "url": "https://example.com/tv/bein-1"
+    },
+    {
+      "id": "ssc-1",
+      "title": "SSC 1",
+      "type": "channel",
+      "url": "https://example.com/tv/ssc-1",
+      "mirrors": ["https://backup.example.com/tv/ssc-1"]
+    }
+  ]
+}

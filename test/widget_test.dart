@@ -1,7 +1,15 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kora_live/core/theme/app_theme.dart';
+import 'package:kora_live/data/repositories/stream_repository_impl.dart';
+import 'package:kora_live/presentation/screens/home_screen.dart';
 import 'package:kora_live/domain/entities/stream_link.dart';
 import 'package:kora_live/data/models/stream_link_model.dart';
 import 'package:kora_live/data/models/settings_model.dart';
+
+import 'helpers/fakes.dart';
 
 void main() {
   group('Data Layer Model Serialization Tests', () {
@@ -52,6 +60,53 @@ void main() {
       final decoded = SettingsModel.fromMap(map);
       expect(decoded.adBlockEnabled, true);
       expect(decoded.popupBlockEnabled, false);
+      expect(decoded.serverUrl, '');
+      expect(decoded.autoSync, true);
+    });
+
+    test('records saved by v1.0 (without new fields) still load', () {
+      final legacy = StreamLinkModel.fromMap({
+        'id': '1700000000000',
+        'title': 'Old',
+        'url': 'https://old.example.com',
+        'type': 'tvChannel',
+        'isFavorite': false,
+        'createdAt': DateTime(2026, 1, 1).toIso8601String(),
+        'lastViewedAt': null,
+        'playCount': 2,
+      });
+      expect(legacy.source, StreamSource.local);
+      expect(legacy.mirrors, isEmpty);
+      expect(legacy.type, StreamType.tvChannel);
+      expect(legacy.playCount, 2);
+
+      final legacySettings = SettingsModel.fromMap(
+        {'adBlockEnabled': false, 'popupBlockEnabled': true},
+        defaultServerUrl: 'https://default.example.com',
+      );
+      expect(legacySettings.adBlockEnabled, false);
+      expect(legacySettings.serverUrl, 'https://default.example.com');
+    });
+
+    test('new fields round-trip', () {
+      final model = StreamLinkModel(
+        id: 'remote_1',
+        title: 'T',
+        url: 'https://a.com',
+        type: StreamType.koraMatch,
+        createdAt: DateTime(2026, 1, 1),
+        source: StreamSource.remote,
+        mirrors: const [StreamMirror(name: 'HD', url: 'https://b.com')],
+        league: 'UCL',
+        logoUrl: 'https://logo.png',
+        startTime: DateTime(2026, 1, 2, 20),
+      );
+      final decoded = StreamLinkModel.fromMap(model.toMap());
+      expect(decoded.source, StreamSource.remote);
+      expect(decoded.mirrors, model.mirrors);
+      expect(decoded.league, 'UCL');
+      expect(decoded.logoUrl, 'https://logo.png');
+      expect(decoded.startTime, DateTime(2026, 1, 2, 20));
     });
   });
 
@@ -94,6 +149,80 @@ void main() {
       final dateSort = List<StreamLink>.from(list);
       dateSort.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       expect(dateSort.first.id, '2'); // createdAt 'now' is newer than 'now - 10m'
+    });
+  });
+
+  group('Home screen', () {
+    Future<FakeLocalDataSource> pumpHome(WidgetTester tester) async {
+      final local = FakeLocalDataSource();
+      await local.addStream(localStream('1', 'Arsenal vs Chelsea'));
+      await local.addStream(localStream('2', 'beIN Sports 1', type: StreamType.tvChannel));
+      final streamCubit = buildStreamCubit(
+        StreamRepositoryImpl(local, FakeRemoteDataSource()),
+      );
+      final settingsCubit = buildSettingsCubit(InMemorySettingsRepository());
+
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: settingsCubit),
+          BlocProvider.value(value: streamCubit),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.dark,
+          locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const HomeScreen(),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      return local;
+    }
+
+    testWidgets('shows streams and navigates between tabs', (tester) async {
+      await pumpHome(tester);
+
+      expect(find.text('المباريات'), findsWidgets);
+      expect(find.text('Arsenal vs Chelsea'), findsWidgets);
+      expect(find.text('beIN Sports 1'), findsWidgets);
+
+      await tester.tap(find.text('الإعدادات').last);
+      await tester.pumpAndSettle();
+      expect(find.text('رابط السيرفر'), findsOneWidget);
+      expect(find.text('حاجب الإعلانات'), findsOneWidget);
+
+      await tester.tap(find.text('المفضلة').last);
+      await tester.pumpAndSettle();
+      expect(find.text('لا توجد عناصر مفضلة'), findsOneWidget);
+    });
+
+    testWidgets('add sheet validates and saves a link', (tester) async {
+      final local = await pumpHome(tester);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('إضافة').last);
+      await tester.pumpAndSettle();
+      expect(find.text('أدخل العنوان'), findsOneWidget);
+      expect(find.text('أدخل رابط البث'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Ahly vs Zamalek');
+      await tester.enterText(find.byType(TextFormField).at(1), 'not-a-url');
+      await tester.tap(find.text('إضافة').last);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('الرابط غير صالح'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField).at(1), 'https://live.example.com/1');
+      await tester.tap(find.text('إضافة').last);
+      await tester.pumpAndSettle();
+
+      expect(local.store.values.map((s) => s.title), contains('Ahly vs Zamalek'));
     });
   });
 }
